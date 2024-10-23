@@ -1,9 +1,13 @@
 buildpacks:
-  - url: https://github.com/heroku/heroku-buildpack-nodejs-engine
+  - name: nodejs-engine
+    provider: heroku
     version: v1.5.6
-  - url: https://github.com/digitalocean/digitalocean-buildpack-node
+  - name: node
+    provider: digitalocean
     version: v0.4.0
-  - url: https://github.com/digitalocean/digitalocean-buildpack-procfile
+  - name: procfile
+    provider: digitalocean
     version: v0.0.4
-  - url: https://github.com/digitalocean/digitalocean-buildpack-custom
+  - name: custom
+    provider: digitalocean
     version: v0.1.2
