@@ -1,2 +1,4 @@
-https://github.com/heroku/heroku-buildpack-nodejs#v1.5.6
+https://github.com/heroku/heroku-buildpack-nodejs-engine#v1.5.6
 https://github.com/digitalocean/digitalocean-buildpack-node#v0.4.0
+https://github.com/digitalocean/digitalocean-buildpack-procfile#v0.0.4
+https://github.com/digitalocean/digitalocean-buildpack-custom#v0.1.2
