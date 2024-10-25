@@ -1,0 +1,49 @@
+name: Build and Deploy to DigitalOcean Spaces
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the app
+        run: npm run build 
+
+      - name: Rename files for versioned URLs
+        run: |
+          VERSION=$(date +%s)
+          for file in $(find build -type f); do
+            mv "$file" "${file%.*}-$VERSION.${file##*.}"
+          done
+
+      - name: Upload to DigitalOcean Spaces
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
+        run: |
+          # Install the AWS CLI for Spaces access
+          sudo apt-get install -y awscli
+          
+          # Configure AWS CLI for DigitalOcean Spaces
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set default.region ${{ secrets.DO_SPACES_REGION }}
+
+          # Sync build files to the DigitalOcean Space, making them public and deleting old files
+          aws s3 sync ./build s3://${{ secrets.DO_SPACES_BUCKET }} \
+            --endpoint-url=${{ secrets.DO_SPACES_ENDPOINT }} \
+            --acl public-read \
+            --delete
