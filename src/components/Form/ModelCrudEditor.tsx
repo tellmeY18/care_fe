@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { classNames } from "../../Utils/utils";
-import ButtonV2 from "@/components/Common/components/ButtonV2";
-import CareIcon from "../../CAREUI/icons/CareIcon";
 import { useTranslation } from "react-i18next";
+
+import CareIcon from "@/CAREUI/icons/CareIcon";
+
+import ButtonV2 from "@/components/Common/ButtonV2";
+
+import { classNames } from "@/Utils/utils";
 
 interface Identifier {
   id: string;
@@ -117,7 +120,7 @@ export default function ModelCrudEditor<TRes extends Identifier, TReq, TErr>(
             onClick={() => handleDelete(props.item.id)}
             className="w-full text-xl text-red-500 hover:text-red-700 disabled:grayscale md:w-auto"
           >
-            <CareIcon icon="l-times-circle" />{" "}
+            <CareIcon icon="l-times-circle" />
             <span className="text-sm md:hidden">{t("remove")}</span>
           </button>
         )}

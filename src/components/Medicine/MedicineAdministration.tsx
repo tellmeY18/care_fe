@@ -1,20 +1,29 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck - File not in use
 import { useEffect, useMemo, useState } from "react";
-import PrescriptionDetailCard from "./PrescriptionDetailCard";
-import { MedicineAdministrationRecord, Prescription } from "./models";
-import TextAreaFormField from "../Form/FormFields/TextAreaFormField";
-import CheckBoxFormField from "../Form/FormFields/CheckBoxFormField";
-import ButtonV2 from "@/components/Common/components/ButtonV2";
-import CareIcon from "../../CAREUI/icons/CareIcon";
-import { Error, Success } from "../../Utils/Notifications";
-import { formatDateTime } from "../../Utils/utils";
 import { useTranslation } from "react-i18next";
-import dayjs from "../../Utils/dayjs";
-import request from "../../Utils/request/request";
-import MedicineRoutes from "./routes";
-import useSlug from "@/common/hooks/useSlug";
-import DosageFormField from "../Form/FormFields/DosageFormField";
-import { AdministrationDosageValidator } from "./validators";
-import DateFormField from "../Form/FormFields/DateFormField";
+
+import CareIcon from "@/CAREUI/icons/CareIcon";
+
+import ButtonV2 from "@/components/Common/ButtonV2";
+import CheckBoxFormField from "@/components/Form/FormFields/CheckBoxFormField";
+import DateFormField from "@/components/Form/FormFields/DateFormField";
+import DosageFormField from "@/components/Form/FormFields/DosageFormField";
+import TextAreaFormField from "@/components/Form/FormFields/TextAreaFormField";
+import PrescriptionDetailCard from "@/components/Medicine/PrescriptionDetailCard";
+import {
+  MedicineAdministrationRecord,
+  Prescription,
+} from "@/components/Medicine/models";
+import MedicineRoutes from "@/components/Medicine/routes";
+import { AdministrationDosageValidator } from "@/components/Medicine/validators";
+
+import useSlug from "@/hooks/useSlug";
+
+import { Error, Success } from "@/Utils/Notifications";
+import dayjs from "@/Utils/dayjs";
+import request from "@/Utils/request/request";
+import { formatDateTime } from "@/Utils/utils";
 
 interface Props {
   prescriptions: Prescription[];
@@ -28,7 +37,7 @@ type DosageField = {
 
 export default function MedicineAdministration(props: Props) {
   const { t } = useTranslation();
-  const consultation = useSlug("consultation");
+  const encounterId = useSlug("encounter");
   const [shouldAdminister, setShouldAdminister] = useState<boolean[]>([]);
   const [dosages, setDosages] = useState<DosageField[]>([]);
   const [notes, setNotes] = useState<MedicineAdministrationRecord["notes"][]>(
@@ -85,7 +94,10 @@ export default function MedicineAdministration(props: Props) {
     const ok = await Promise.all(
       administrations.map(({ prescription, ...body }) =>
         request(MedicineRoutes.administerPrescription, {
-          pathParams: { consultation, external_id: prescription.id },
+          pathParams: {
+            consultation: encounterId,
+            external_id: prescription.id,
+          },
           body,
         }).then(({ res }) => !!res?.ok),
       ),

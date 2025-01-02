@@ -1,7 +1,9 @@
 import { ReactNode, useEffect, useRef } from "react";
-import Breadcrumbs from "./Breadcrumbs";
-import PageHeadTitle from "./PageHeadTitle";
-import { classNames } from "../../Utils/utils";
+
+import Breadcrumbs from "@/components/Common/Breadcrumbs";
+import PageHeadTitle from "@/components/Common/PageHeadTitle";
+
+import { classNames } from "@/Utils/utils";
 
 export interface PageTitleProps {
   title: string;
@@ -17,6 +19,7 @@ export interface PageTitleProps {
   // New props for Breadcrumbs
   hideBack?: boolean;
   backUrl?: string;
+  hideTitleOnPage?: boolean;
   onBackClick?: () => boolean | void;
 }
 
@@ -33,6 +36,7 @@ export default function PageTitle({
   hideBack = false,
   backUrl,
   onBackClick,
+  hideTitleOnPage,
 }: PageTitleProps) {
   const divRef = useRef<any>();
 
@@ -62,13 +66,15 @@ export default function PageTitle({
 
       <div
         className={classNames(
-          "mt-2 flex items-center",
+          "mt-1 flex items-center",
           !!componentRight &&
             "flex-col justify-start space-y-2 md:flex-row md:justify-between md:space-y-0",
         )}
       >
         <div className="flex items-center">
-          <h2 className="ml-0 text-2xl leading-tight">{title}</h2>
+          {!hideTitleOnPage && (
+            <h2 className="ml-0 text-2xl leading-tight">{title}</h2>
+          )}
         </div>
         {componentRight}
       </div>

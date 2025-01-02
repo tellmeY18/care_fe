@@ -1,24 +1,28 @@
+import { t } from "i18next";
 import { useState } from "react";
+
+import CareIcon from "@/CAREUI/icons/CareIcon";
+
+import ButtonV2 from "@/components/Common/ButtonV2";
+import ConfirmDialog from "@/components/Common/ConfirmDialog";
+import Page from "@/components/Common/Page";
+import Tabs from "@/components/Common/Tabs";
+import { PatientConsentModel } from "@/components/Facility/models";
+import { SelectFormField } from "@/components/Form/FormFields/SelectFormField";
+import TextFormField from "@/components/Form/FormFields/TextFormField";
+import PatientConsentRecordBlockGroup from "@/components/Patient/PatientConsentRecordBlock";
+
+import useFileManager from "@/hooks/useFileManager";
+import useFileUpload from "@/hooks/useFileUpload";
+
 import {
   CONSENT_PATIENT_CODE_STATUS_CHOICES,
   CONSENT_TYPE_CHOICES,
 } from "@/common/constants";
-import routes from "../../Redux/api";
-import useQuery from "../../Utils/request/useQuery";
-import Page from "@/components/Common/components/Page";
-import request from "../../Utils/request/request";
-import ConfirmDialog from "@/components/Common/ConfirmDialog";
-import { SelectFormField } from "../Form/FormFields/SelectFormField";
-import CareIcon from "../../CAREUI/icons/CareIcon";
-import { formatDateTime } from "../../Utils/utils";
-import TextFormField from "../Form/FormFields/TextFormField";
-import ButtonV2 from "@/components/Common/components/ButtonV2";
-import useFileUpload from "../../Utils/useFileUpload";
-import PatientConsentRecordBlockGroup from "./PatientConsentRecordBlock";
-import useFileManager from "../../Utils/useFileManager";
-import { PatientConsentModel } from "../Facility/models";
-import Tabs from "@/components/Common/components/Tabs";
-import { t } from "i18next";
+
+import routes from "@/Utils/request/api";
+import request from "@/Utils/request/request";
+import useTanStackQueryInstead from "@/Utils/request/useQuery";
 
 export default function PatientConsentRecords(props: {
   facilityId: string;
@@ -51,21 +55,18 @@ export default function PatientConsentRecords(props: {
     },
   });
 
-  const { data: patient } = useQuery(routes.getPatient, {
-    pathParams: {
-      id: patientId,
+  const { data: consentRecordsData, refetch } = useTanStackQueryInstead(
+    routes.listConsents,
+    {
+      pathParams: {
+        consultationId,
+      },
+      query: {
+        limit: 1000,
+        offset: 0,
+      },
     },
-  });
-
-  const { data: consentRecordsData, refetch } = useQuery(routes.listConsents, {
-    pathParams: {
-      consultationId,
-    },
-    query: {
-      limit: 1000,
-      offset: 0,
-    },
-  });
+  );
 
   const consentRecords = consentRecordsData?.results;
 
@@ -104,19 +105,7 @@ export default function PatientConsentRecords(props: {
   return (
     <Page
       title={"Patient Consent Records"}
-      crumbsReplacements={{
-        [facilityId]: { name: patient?.facility_object?.name },
-        [patientId]: { name: patient?.name },
-        [consultationId]: {
-          name:
-            patient?.last_consultation?.suggestion === "A"
-              ? `Admitted on ${formatDateTime(
-                  patient?.last_consultation?.encounter_date,
-                )}`
-              : patient?.last_consultation?.suggestion_text,
-        },
-      }}
-      backUrl={`/facility/${facilityId}/patient/${patientId}/consultation/${consultationId}/`}
+      backUrl={`/facility/${facilityId}/patient/${patientId}/consultation/${consultationId}/update`}
     >
       {fileUpload.Dialogues}
       {fileManager.Dialogues}
@@ -219,7 +208,8 @@ export default function PatientConsentRecords(props: {
                   onClick={fileUpload.clearFiles}
                   disabled={fileUpload.uploading}
                 >
-                  <CareIcon icon="l-trash-alt" className="" />
+                  <CareIcon icon="l-trash" className="text-lg" />
+                  <span>{t("delete")}</span>
                 </ButtonV2>
               </>
             ) : (

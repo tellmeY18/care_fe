@@ -1,48 +1,50 @@
+import { useQuery } from "@tanstack/react-query";
+import { navigate, useQueryParams } from "raviger";
 import { useReducer, useState } from "react";
-
-import { FacilitySelect } from "@/components/Common/FacilitySelect";
-import * as Notification from "../../Utils/Notifications";
-import { navigate } from "raviger";
-import {
-  OptionsType,
-  RESOURCE_CATEGORY_CHOICES,
-  RESOURCE_SUBCATEGORIES,
-} from "@/common/constants";
-import { parsePhoneNumber } from "../../Utils/utils";
-import { phonePreg } from "@/common/validation";
-import { Cancel, Submit } from "@/components/Common/components/ButtonV2";
-import PhoneNumberFormField from "../Form/FormFields/PhoneNumberFormField";
-import { FieldChangeEvent } from "../Form/FormFields/Utils";
-import useAppHistory from "@/common/hooks/useAppHistory";
 import { useTranslation } from "react-i18next";
-import TextFormField from "../Form/FormFields/TextFormField";
-import { SelectFormField } from "../Form/FormFields/SelectFormField";
-import TextAreaFormField from "../Form/FormFields/TextAreaFormField";
-import RadioFormField from "../Form/FormFields/RadioFormField";
-import { FieldLabel } from "../Form/FormFields/FormField";
-import Card from "../../CAREUI/display/Card";
-import Page from "@/components/Common/components/Page";
-import { PhoneNumberValidator } from "../Form/FieldValidators";
-import useQuery from "../../Utils/request/useQuery";
-import routes from "../../Redux/api";
-import request from "../../Utils/request/request";
 
+import Card from "@/CAREUI/display/Card";
+import CareIcon from "@/CAREUI/icons/CareIcon";
+
+import { Cancel, Submit } from "@/components/Common/ButtonV2";
+import { FacilitySelect } from "@/components/Common/FacilitySelect";
 import Loading from "@/components/Common/Loading";
+import Page from "@/components/Common/Page";
+import { PhoneNumberValidator } from "@/components/Form/FieldValidators";
+import { FieldLabel } from "@/components/Form/FormFields/FormField";
+import PhoneNumberFormField from "@/components/Form/FormFields/PhoneNumberFormField";
+import RadioFormField from "@/components/Form/FormFields/RadioFormField";
+import { SelectFormField } from "@/components/Form/FormFields/SelectFormField";
+import TextAreaFormField from "@/components/Form/FormFields/TextAreaFormField";
+import TextFormField from "@/components/Form/FormFields/TextFormField";
+import { FieldChangeEvent } from "@/components/Form/FormFields/Utils";
+
+import useAppHistory from "@/hooks/useAppHistory";
+
+import { RESOURCE_CATEGORY_CHOICES } from "@/common/constants";
+import { phonePreg } from "@/common/validation";
+
+import * as Notification from "@/Utils/Notifications";
+import routes from "@/Utils/request/api";
+import query from "@/Utils/request/query";
+import request from "@/Utils/request/request";
+import { parsePhoneNumber } from "@/Utils/utils";
+import { CreateResourceRequest } from "@/types/resourceRequest/resourceRequest";
+
 interface resourceProps {
   facilityId: number;
 }
 
-const initForm: any = {
-  category: "OXYGEN",
-  sub_category: 1000,
-  approving_facility: null,
-  assigned_facility: null,
-  emergency: "false",
+const initForm: Partial<CreateResourceRequest> = {
+  category: "",
+  assigned_facility: undefined,
+  emergency: false,
   title: "",
   reason: "",
-  refering_facility_contact_name: "",
-  refering_facility_contact_number: "+91",
-  required_quantity: null,
+  referring_facility_contact_name: "",
+  referring_facility_contact_number: "+91",
+  related_patient: undefined,
+  priority: 1,
 };
 
 const requiredFields: any = {
@@ -52,13 +54,13 @@ const requiredFields: any = {
   sub_category: {
     errorText: "Subcategory",
   },
-  approving_facility: {
-    errorText: "Name of the referring facility",
+  assigned_facility: {
+    errorText: "Name of the facility",
   },
-  refering_facility_contact_name: {
+  referring_facility_contact_name: {
     errorText: "Name of contact of the referring facility",
   },
-  refering_facility_contact_number: {
+  referring_facility_contact_number: {
     errorText: "Phone number of contact of the referring facility",
     invalidText: "Please enter valid phone number",
   },
@@ -87,6 +89,7 @@ export default function ResourceCreate(props: resourceProps) {
   const { facilityId } = props;
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+  const [{ related_patient }] = useQueryParams();
 
   const resourceFormReducer = (state = initialState, action: any) => {
     switch (action.type) {
@@ -109,9 +112,13 @@ export default function ResourceCreate(props: resourceProps) {
 
   const [state, dispatch] = useReducer(resourceFormReducer, initialState);
 
-  const { data: facilityData } = useQuery(routes.getAnyFacility, {
-    prefetch: facilityId !== undefined,
-    pathParams: { id: String(facilityId) },
+  const { data: facilityData } = useQuery({
+    queryKey: ["facility", facilityId],
+    queryFn: () =>
+      query(routes.getAnyFacility, {
+        pathParams: { id: String(facilityId) },
+      }),
+    enabled: !!facilityId,
   });
 
   const validateForm = () => {
@@ -119,7 +126,7 @@ export default function ResourceCreate(props: resourceProps) {
     let isInvalidForm = false;
     Object.keys(requiredFields).forEach((field) => {
       switch (field) {
-        case "refering_facility_contact_number": {
+        case "referring_facility_contact_number": {
           const phoneNumber = parsePhoneNumber(state.form[field]);
           if (!state.form[field]) {
             errors[field] = requiredFields[field].errorText;
@@ -172,22 +179,21 @@ export default function ResourceCreate(props: resourceProps) {
     if (validForm) {
       setIsLoading(true);
 
-      const resourceData = {
+      const resourceData: CreateResourceRequest = {
         status: "PENDING",
         category: state.form.category,
-        sub_category: state.form.sub_category,
         origin_facility: String(props.facilityId),
-        approving_facility: (state.form.approving_facility || {}).id,
         assigned_facility: (state.form.assigned_facility || {}).id,
+        approving_facility: null,
         emergency: state.form.emergency === "true",
         title: state.form.title,
         reason: state.form.reason,
-        refering_facility_contact_name:
-          state.form.refering_facility_contact_name,
-        refering_facility_contact_number: parsePhoneNumber(
-          state.form.refering_facility_contact_number,
-        ),
-        requested_quantity: state.form.requested_quantity || 0,
+        referring_facility_contact_name:
+          state.form.referring_facility_contact_name,
+        referring_facility_contact_number:
+          parsePhoneNumber(state.form.referring_facility_contact_number) ?? "",
+        related_patient: related_patient,
+        priority: state.form.priority,
       };
 
       const { res, data } = await request(routes.createResource, {
@@ -198,7 +204,7 @@ export default function ResourceCreate(props: resourceProps) {
       if (res?.ok && data) {
         await dispatch({ type: "set_form", form: initForm });
         Notification.Success({
-          msg: "Resource request created successfully",
+          msg: "Request created successfully",
         });
 
         navigate(`/resource/${data.id}`);
@@ -220,47 +226,41 @@ export default function ResourceCreate(props: resourceProps) {
       backUrl={`/facility/${facilityId}`}
     >
       <Card className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TextFormField
-          required
-          label={t("contact_person")}
-          name="refering_facility_contact_name"
-          value={state.form.refering_facility_contact_name}
-          onChange={handleChange}
-          error={state.errors.refering_facility_contact_name}
-        />
-        <PhoneNumberFormField
-          label={t("contact_phone")}
-          name="refering_facility_contact_number"
-          required
-          value={state.form.refering_facility_contact_number}
-          onChange={handleFormFieldChange}
-          error={state.errors.refering_facility_contact_number}
-          types={["mobile", "landline"]}
-        />
+        {related_patient && (
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 md:col-span-2">
+            <div className="flex items-center gap-2">
+              <CareIcon icon="l-user" className="text-lg text-blue-700" />
+              <span className="text-sm text-blue-700">
+                Linked Patient:{" "}
+                <span className="font-medium">{related_patient}</span>
+              </span>
+            </div>
+          </div>
+        )}
 
         <div>
-          <FieldLabel required>{t("approving_facility")}</FieldLabel>
+          <FieldLabel required>{t("organization_for_care_support")}</FieldLabel>
           <FacilitySelect
             multiple={false}
-            facilityType={1500}
-            name="approving_facility"
-            selected={state.form.approving_facility}
+            name="assigned_facility"
+            selected={state.form.assigned_facility}
             setSelected={(value: any) =>
-              handleValueChange(value, "approving_facility")
+              handleValueChange(value, "assigned_facility")
             }
-            errors={state.errors.approving_facility}
+            errors={state.errors.assigned_facility}
           />
         </div>
-
-        <RadioFormField
-          label={t("is_this_an_emergency")}
-          name="emergency"
-          options={[true, false]}
-          optionLabel={(o) => (o ? t("yes") : t("no"))}
-          optionValue={(o) => String(o)}
-          value={state.form.emergency}
-          onChange={handleChange}
-        />
+        <span className="pt-4 px-4 bg-red-200/50 rounded-lg">
+          <RadioFormField
+            label={t("is_this_an_emergency")}
+            name="emergency"
+            options={[true, false]}
+            optionLabel={(o) => (o ? t("yes") : t("no"))}
+            optionValue={(o) => String(o)}
+            value={state.form.emergency}
+            onChange={handleChange}
+          />
+        </span>
 
         <SelectFormField
           label={t("category")}
@@ -268,50 +268,52 @@ export default function ResourceCreate(props: resourceProps) {
           required
           value={state.form.category}
           options={RESOURCE_CATEGORY_CHOICES}
-          optionLabel={(option: string) => option}
-          optionValue={(option: string) => option}
+          optionLabel={(option: { text: string; id: string }) => option.text}
+          optionValue={(option: { text: string; id: string }) => option.id}
           onChange={({ value }) => handleValueChange(value, "category")}
         />
-        <SelectFormField
-          label={t("sub_category")}
-          name="sub_category"
-          required
-          value={state.form.sub_category}
-          options={RESOURCE_SUBCATEGORIES}
-          optionLabel={(option: OptionsType) => option.text}
-          optionValue={(option: OptionsType) => option.id}
-          onChange={({ value }) => handleValueChange(value, "sub_category")}
-        />
-
-        <TextFormField
-          label={t("request_title")}
-          name="title"
-          placeholder={t("request_title_placeholder")}
-          value={state.form.title}
-          onChange={handleChange}
-          error={state.errors.title}
-          required
-        />
-
-        <TextFormField
-          label={t("required_quantity")}
-          name="requested_quantity"
-          value={state.form.required_quantity}
-          onChange={handleChange}
-        />
+        <div className="md:col-span-2">
+          <TextFormField
+            label={t("request_title")}
+            name="title"
+            placeholder={t("request_title_placeholder")}
+            value={state.form.title}
+            onChange={handleChange}
+            error={state.errors.title}
+            required
+          />
+        </div>
 
         <div className="md:col-span-2">
           <TextAreaFormField
-            label={t("request_description")}
+            label={t("request_reason")}
             name="reason"
             rows={5}
             required
-            placeholder={t("request_description_placeholder")}
+            placeholder={t("request_reason_placeholder")}
             value={state.form.reason}
             onChange={handleChange}
             error={state.errors.reason}
           />
         </div>
+
+        <TextFormField
+          required
+          label={t("contact_person")}
+          name="referring_facility_contact_name"
+          value={state.form.referring_facility_contact_name}
+          onChange={handleChange}
+          error={state.errors.referring_facility_contact_name}
+        />
+        <PhoneNumberFormField
+          label={t("contact_phone")}
+          name="referring_facility_contact_number"
+          required
+          value={state.form.referring_facility_contact_number}
+          onChange={handleFormFieldChange}
+          error={state.errors.referring_facility_contact_number}
+          types={["mobile", "landline"]}
+        />
 
         <div className="mt-4 flex flex-col justify-end gap-2 md:col-span-2 md:flex-row">
           <Cancel onClick={() => goBack()} />

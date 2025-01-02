@@ -1,5 +1,5 @@
-import DialogModal from "./Dialog";
-import { ButtonVariant, Cancel, Submit } from "./components/ButtonV2";
+import { ButtonVariant, Cancel, Submit } from "@/components/Common/ButtonV2";
+import DialogModal from "@/components/Common/Dialog";
 
 type ConfirmDialogProps = {
   className?: string;
@@ -13,6 +13,7 @@ type ConfirmDialogProps = {
   onConfirm: () => void;
   children?: React.ReactNode;
   cancelLabel?: string;
+  name?: string;
 };
 
 const ConfirmDialog = ({
@@ -22,6 +23,7 @@ const ConfirmDialog = ({
   onConfirm,
   cancelLabel,
   children,
+  name,
   ...props
 }: ConfirmDialogProps) => {
   return (
@@ -29,7 +31,12 @@ const ConfirmDialog = ({
       {children}
       <div className="mt-6 flex w-full flex-col justify-end gap-2 md:flex-row">
         <Cancel onClick={props.onClose} label={cancelLabel} />
-        <Submit onClick={onConfirm} variant={variant} disabled={disabled}>
+        <Submit
+          name={name ?? "submit"}
+          onClick={onConfirm}
+          variant={variant}
+          disabled={disabled}
+        >
           {action}
         </Submit>
       </div>

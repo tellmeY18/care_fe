@@ -1,7 +1,8 @@
 import { Link } from "raviger";
-import { FacilityModel } from "./models";
 import { ReactNode } from "react";
+
 import { Avatar } from "@/components/Common/Avatar";
+import { FacilityModel } from "@/components/Facility/models";
 
 export default function FacilityBlock(props: {
   facility: FacilityModel;
@@ -32,9 +33,6 @@ export default function FacilityBlock(props: {
       </div>
       <div>
         <b className="font-semibold">{facility.name}</b>
-        <p className="text-sm">
-          {facility.address} {facility.local_body_object?.name}
-        </p>
       </div>
     </Element>
   );

@@ -1,11 +1,20 @@
 import { ReactNode } from "react";
-import ButtonV2 from "@/components/Common/components/ButtonV2";
-import CareIcon from "../icons/CareIcon";
-import { classNames } from "../../Utils/utils";
-import Page from "@/components/Common/components/Page";
-import useBreakpoints from "@/common/hooks/useBreakpoints";
 import { useTranslation } from "react-i18next";
-import { ZoomControls, ZoomProvider, ZoomTransform } from "../interactive/Zoom";
+
+import CareIcon from "@/CAREUI/icons/CareIcon";
+import {
+  ZoomControls,
+  ZoomProvider,
+  ZoomTransform,
+} from "@/CAREUI/interactive/Zoom";
+
+import { Button } from "@/components/ui/button";
+
+import Page from "@/components/Common/Page";
+
+import useBreakpoints from "@/hooks/useBreakpoints";
+
+import { classNames } from "@/Utils/utils";
 
 type Props = {
   children: ReactNode;
@@ -22,10 +31,10 @@ export default function PrintPreview(props: Props) {
     <Page title={props.title}>
       <div className="mx-auto my-8 w-[50rem]">
         <div className="top-0 z-20 flex gap-2 bg-secondary-100 px-2 py-4 xl:absolute xl:right-6 xl:top-8 xl:justify-end">
-          <ButtonV2 disabled={props.disabled} onClick={print}>
+          <Button variant="primary" disabled={props.disabled} onClick={print}>
             <CareIcon icon="l-print" className="text-lg" />
             {t("print")}
-          </ButtonV2>
+          </Button>
         </div>
 
         <ZoomProvider initialScale={normalScale}>

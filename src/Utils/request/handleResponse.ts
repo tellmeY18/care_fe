@@ -1,6 +1,7 @@
-import { RequestResult } from "./types";
-import * as Notifications from "../Notifications";
 import { navigate } from "raviger";
+
+import * as Notifications from "@/Utils/Notifications";
+import { RequestResult } from "@/Utils/request/types";
 
 export default function handleResponse(
   { res, error }: RequestResult<unknown>,
@@ -9,6 +10,12 @@ export default function handleResponse(
   const notify = silent ? undefined : Notifications;
 
   if (res === undefined) {
+    return;
+  }
+
+  // 404 Not Found
+  if (res.status === 404) {
+    notify?.Error({ msg: "Not Found" });
     return;
   }
 

@@ -1,13 +1,16 @@
-import MedicineRoutes from "./routes";
-import useQuery from "../../Utils/request/useQuery";
-import DialogModal from "@/components/Common/Dialog";
 import { useState } from "react";
-import Timeline, { TimelineNode } from "../../CAREUI/display/Timeline";
-import { MedibaseMedicine, Prescription } from "./models";
 import { useTranslation } from "react-i18next";
-import { humanizeStrings } from "../../Utils/utils";
 
+import Timeline, { TimelineNode } from "@/CAREUI/display/Timeline";
+
+import DialogModal from "@/components/Common/Dialog";
 import Loading from "@/components/Common/Loading";
+import { MedibaseMedicine, Prescription } from "@/components/Medicine/models";
+import MedicineRoutes from "@/components/Medicine/routes";
+
+import useTanStackQueryInstead from "@/Utils/request/useQuery";
+import { humanizeStrings } from "@/Utils/utils";
+
 interface MedicinePrescriptionSummaryProps {
   consultation: string;
 }
@@ -21,7 +24,7 @@ export const MedicinePrescriptionSummary = ({
     name: "",
     medicineId: "",
   });
-  const { data } = useQuery(MedicineRoutes.listPrescriptions, {
+  const { data } = useTanStackQueryInstead(MedicineRoutes.listPrescriptions, {
     pathParams: { consultation },
     query: { limit: 100 },
   });
@@ -117,12 +120,15 @@ export default function ConsultationMedicineLogs({
   consultationId,
   medicineId,
 }: ConsultationMedicineLogsProps) {
-  const { data, loading } = useQuery(MedicineRoutes.listPrescriptions, {
-    pathParams: { consultation: consultationId },
-    query: {
-      medicine: medicineId,
+  const { data, loading } = useTanStackQueryInstead(
+    MedicineRoutes.listPrescriptions,
+    {
+      pathParams: { consultation: consultationId },
+      query: {
+        medicine: medicineId,
+      },
     },
-  });
+  );
 
   if (loading) {
     return <Loading />;

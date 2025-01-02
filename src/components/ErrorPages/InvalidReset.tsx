@@ -1,12 +1,12 @@
-import * as Notification from "../../Utils/Notifications";
-import { useEffect } from "react";
 import { Link } from "raviger";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 export default function InvalidReset() {
   const { t } = useTranslation();
   useEffect(() => {
-    Notification.closeAllNotifications();
+    toast.dismiss();
   }, []);
   return (
     <div className="flex h-screen items-center justify-center text-center">

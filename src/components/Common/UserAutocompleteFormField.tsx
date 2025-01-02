@@ -1,20 +1,25 @@
-import { Autocomplete } from "../Form/FormFields/Autocomplete";
-import FormField from "../Form/FormFields/FormField";
+import { useEffect, useState } from "react";
+
+import { Autocomplete } from "@/components/Form/FormFields/Autocomplete";
+import FormField from "@/components/Form/FormFields/FormField";
 import {
   FormFieldBaseProps,
   useFormFieldPropsResolver,
-} from "../Form/FormFields/Utils";
+} from "@/components/Form/FormFields/Utils";
+import { UserBareMinimum } from "@/components/Users/models";
+
+import { UserRole } from "@/common/constants";
+
+import routes from "@/Utils/request/api";
+import useTanStackQueryInstead from "@/Utils/request/useQuery";
 import {
   classNames,
   formatName,
   isUserOnline,
   mergeQueryOptions,
-} from "../../Utils/utils";
-import { UserRole } from "@/common/constants";
-import { useEffect, useState } from "react";
-import useQuery from "../../Utils/request/useQuery";
-import routes from "../../Redux/api";
-import { UserBareMinimum } from "../Users/models";
+} from "@/Utils/utils";
+
+import { Avatar } from "./Avatar";
 
 type BaseProps = FormFieldBaseProps<UserBareMinimum> & {
   placeholder?: string;
@@ -37,7 +42,7 @@ export default function UserAutocomplete(props: UserSearchProps) {
   const [query, setQuery] = useState("");
   const [disabled, setDisabled] = useState(false);
 
-  const { data, loading } = useQuery(routes.userList, {
+  const { data, loading } = useTanStackQueryInstead(routes.userList, {
     query: {
       home_facility: props.homeFacility,
       user_type: props.userType,
@@ -64,6 +69,16 @@ export default function UserAutocomplete(props: UserSearchProps) {
     }
   }, [loading, field.required, data?.results, props.noResultsError]);
 
+  const getAvatar = (option: UserBareMinimum) => {
+    return (
+      <Avatar
+        className="h-11 w-11 rounded-full"
+        name={formatName(option)}
+        imageUrl={option.read_profile_picture_url}
+      />
+    );
+  };
+
   return (
     <FormField field={field}>
       <Autocomplete
@@ -80,8 +95,7 @@ export default function UserAutocomplete(props: UserSearchProps) {
         )}
         optionLabel={formatName}
         optionIcon={userOnlineDot}
-        optionImage={(option) => option.read_profile_picture_url}
-        avatar
+        optionImage={getAvatar}
         optionDescription={(option) =>
           `${option.user_type} - ${option.username}`
         }
@@ -98,7 +112,7 @@ export const LinkedFacilityUsers = (props: LinkedFacilitySearchProps) => {
 
   const [query, setQuery] = useState("");
 
-  const { data, loading } = useQuery(routes.getFacilityUsers, {
+  const { data, loading } = useTanStackQueryInstead(routes.getFacilityUsers, {
     pathParams: { facility_id: props.facilityId },
     query: {
       user_type: props.userType,

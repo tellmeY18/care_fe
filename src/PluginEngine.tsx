@@ -1,25 +1,30 @@
 /* eslint-disable i18next/no-literal-string */
 import React, { Suspense } from "react";
-import { CareAppsContext, useCareApps } from "@/common/hooks/useCareApps";
-import { pluginMap } from "./pluginTypes";
-import { UserAssignedModel } from "@/components/Users/models";
-import ErrorBoundary from "@/components/Common/ErrorBoundary";
 
+import ErrorBoundary from "@/components/Common/ErrorBoundary";
+import Loading from "@/components/Common/Loading";
+
+import { CareAppsContext, useCareApps } from "@/hooks/useCareApps";
+
+import { SupportedPluginComponents, pluginMap } from "@/pluginTypes";
+
+// Import the remote component synchronously
 export default function PluginEngine({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div>Loading plugins...</div>}>
+    <Suspense fallback={<Loading />}>
       <ErrorBoundary
         fallback={
           <div className="flex h-screen w-screen items-center justify-center">
-            Error loading plugins
+            Care has encountered an unexpected error.
           </div>
         }
       >
         <CareAppsContext.Provider value={pluginMap}>
+          <Suspense fallback={<Loading />}></Suspense>
           {children}
         </CareAppsContext.Provider>
       </ErrorBoundary>
@@ -27,25 +32,28 @@ export default function PluginEngine({
   );
 }
 
-export function PLUGIN_DoctorConnectButtons({
-  user,
-}: {
-  user: UserAssignedModel;
-}) {
+type PluginProps<K extends keyof SupportedPluginComponents> =
+  React.ComponentProps<SupportedPluginComponents[K]>;
+
+export function PLUGIN_Component<K extends keyof SupportedPluginComponents>({
+  __name,
+  ...props
+}: { __name: K } & PluginProps<K>) {
   const plugins = useCareApps();
+
   return (
-    <div>
-      {plugins.map((plugin, index) => {
-        const DoctorConnectButtons = plugin.components.DoctorConnectButtons;
-        if (!DoctorConnectButtons) {
+    <>
+      {plugins.map((plugin) => {
+        const Component = plugin.components[
+          __name
+        ] as React.ComponentType<unknown>;
+
+        if (!Component) {
           return null;
         }
-        return (
-          <div key={index}>
-            <DoctorConnectButtons user={user} />
-          </div>
-        );
+
+        return <Component {...props} key={plugin.plugin} />;
       })}
-    </div>
+    </>
   );
 }

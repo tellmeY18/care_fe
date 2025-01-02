@@ -1,12 +1,17 @@
 import dayjs from "dayjs";
-import CareIcon, { IconName } from "../../CAREUI/icons/CareIcon";
-import ButtonV2 from "@/components/Common/components/ButtonV2";
-import { FileUploadModel } from "../Patient/models";
-import { FileManagerResult } from "../../Utils/useFileManager";
-import useQuery from "../../Utils/request/useQuery";
-import routes from "../../Redux/api";
-import { FILE_EXTENSIONS } from "@/common/constants";
 import { t } from "i18next";
+
+import CareIcon, { IconName } from "@/CAREUI/icons/CareIcon";
+
+import ButtonV2 from "@/components/Common/ButtonV2";
+import { FileUploadModel } from "@/components/Patient/models";
+
+import { FileManagerResult } from "@/hooks/useFileManager";
+
+import { FILE_EXTENSIONS } from "@/common/constants";
+
+import routes from "@/Utils/request/api";
+import useTanStackQueryInstead from "@/Utils/request/useQuery";
 
 export interface FileBlockProps {
   file: FileUploadModel;
@@ -27,7 +32,7 @@ export default function FileBlock(props: FileBlockProps) {
 
   const filetype = fileManager.getFileType(file);
 
-  const fileData = useQuery(routes.retrieveUpload, {
+  const fileData = useTanStackQueryInstead(routes.retrieveUpload, {
     query: { file_type: fileManager.type, associating_id },
     pathParams: { id: file.id || "" },
     prefetch: filetype === "AUDIO" && !file.is_archived,

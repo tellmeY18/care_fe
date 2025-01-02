@@ -1,21 +1,55 @@
 import { LazyExoticComponent } from "react";
+
+import { FacilityModel } from "@/components/Facility/models";
 import { UserAssignedModel } from "@/components/Users/models";
+
+import { EncounterTabProps } from "@/pages/Encounters/EncounterShow";
+
 import { AppRoutes } from "./Routers/AppRouter";
-import { INavItem } from "@/components/Common/Sidebar/Sidebar";
+import { FormContextValue } from "./components/Form/FormContext";
+import { PatientMeta } from "./components/Patient/models";
 import { pluginMap } from "./pluginMap";
+import { PatientModel } from "./types/emr/patient";
 
-// Define the available plugins
-export type AvailablePlugin = "@apps/care_livekit_fe";
-
-export type AvailablePluginManifest = "@app-manifest/care_livekit_fe";
+export type PatientForm = PatientModel &
+  PatientMeta & { age?: number; is_postpartum?: boolean };
 
 export type DoctorConnectButtonComponentType = React.FC<{
   user: UserAssignedModel;
 }>;
 
+export type ScribeComponentType = React.FC;
+export type ManageFacilityOptionsComponentType = React.FC<{
+  facility?: FacilityModel;
+}>;
+
+export type ExtendFacilityConfigureComponentType = React.FC<{
+  facilityId: string;
+}>;
+
+export type ExtendPatientRegisterFormComponentType = React.FC<{
+  facilityId: string;
+  patientId?: string;
+  state: {
+    form: {
+      [key: string]: any;
+    };
+    errors: {
+      [key: string]: string;
+    };
+  };
+  dispatch: React.Dispatch<any>;
+  field: FormContextValue<PatientForm>;
+}>;
+
 // Define supported plugin components
 export type SupportedPluginComponents = {
   DoctorConnectButtons: DoctorConnectButtonComponentType;
+  Scribe: ScribeComponentType;
+  ManageFacilityOptions: ManageFacilityOptionsComponentType;
+  EncounterContextEnabler: React.FC;
+  ExtendFacilityConfigure: ExtendFacilityConfigureComponentType;
+  ExtendPatientRegisterForm: ExtendPatientRegisterFormComponentType;
 };
 
 // Create a type for lazy-loaded components
@@ -38,17 +72,8 @@ export type PluginManifest = {
   routes: AppRoutes;
   extends: SupportedPluginExtensions[];
   components: PluginComponentMap;
-  navItems: INavItem[];
-};
-
-// Create a type that ensures only available plugins can be used
-export type EnabledPluginConfig = {
-  plugin: string;
-  manifestPath: AvailablePluginManifest;
-  path: AvailablePlugin;
-  manifest: Promise<PluginManifest>;
-  // Components are a dictionary, with the key being the component name, and the value being the component type
-  components: PluginComponentMap;
+  // navItems: INavItem[];
+  encounterTabs?: Record<string, LazyComponent<React.FC<EncounterTabProps>>>;
 };
 
 export { pluginMap };
