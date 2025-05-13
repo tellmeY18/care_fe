@@ -1,0 +1,44 @@
+name: Deploy React to GCS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) Checkout & build
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: npm ci
+      - run: npm run build
+
+      # 2) Authenticate to GCP
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # 3) Install gcloud & set project
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # 4) Sync build/ → GCS bucket
+      - name: Sync to GCS
+        run: |
+          gsutil -m rsync -r -d build/ gs://${{ secrets.GCS_BUCKET_NAME }}/
+          gsutil -m setmeta -h "Cache-Control:public, max-age=3600" gs://${{ secrets.GCS_BUCKET_NAME }}/**/*.html
+          gsutil -m setmeta -h "Cache-Control:public, max-age=31536000" gs://${{ secrets.GCS_BUCKET_NAME }}/static/**
+
+      # 5) Invalidate CDN (if you’re using Cloud CDN)
+      - name: Invalidate CDN cache
+        if: ${{ secrets.URL_MAP_NAME }}
+        run: |
+          gcloud compute url-maps invalidate-cdn-cache ${{ secrets.URL_MAP_NAME }} --path "/*"
