@@ -42,6 +42,7 @@ interface AutocompleteProps {
   className?: string;
   popoverClassName?: string;
   freeInput?: boolean;
+  closeOnSelect?: boolean;
   "data-cy"?: string;
 }
 
@@ -59,6 +60,7 @@ export default function Autocomplete({
   className,
   popoverClassName,
   freeInput = false,
+  closeOnSelect = true,
   "data-cy": dataCy,
 }: AutocompleteProps) {
   const [open, setOpen] = React.useState(false);
@@ -114,8 +116,6 @@ export default function Autocomplete({
         placeholder={inputPlaceholder}
         disabled={disabled}
         onValueChange={handleInputChange}
-        // Control the input when freeInput is true.
-        {...(freeInput ? { value: inputValue } : {})}
         className="outline-hidden border-none ring-0 shadow-none"
         autoFocus
       />
@@ -135,14 +135,16 @@ export default function Autocomplete({
                   options.find((o) => `${o.label} - ${o.value}` === v)?.value ||
                   "";
                 onChange(currentValue);
-                // If freeInput is enabled, update the input text with the selected option’s label.
+                // If freeInput is enabled, update the input text with the selected option's label.
                 if (freeInput) {
                   const selected = options.find(
                     (o) => o.value === currentValue,
                   );
                   setInputValue(selected ? selected.label : currentValue);
                 }
-                setOpen(false);
+                if (closeOnSelect) {
+                  setOpen(false);
+                }
               }}
             >
               <CheckIcon
@@ -215,7 +217,12 @@ export default function Autocomplete({
           data-cy={dataCy}
           onClick={() => setOpen(!open)}
         >
-          <span className={cn("truncate", !selectedOption && "text-gray-500")}>
+          <span
+            className={cn(
+              inputValue && "truncate",
+              !selectedOption && "text-gray-500",
+            )}
+          >
             {displayText}
           </span>
           <CaretSortIcon className="ml-2 size-4 shrink-0 opacity-50" />

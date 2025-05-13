@@ -12,6 +12,76 @@
 
 @config '../../tailwind.config.js';
 
+/* Custom animations for the SessionExpired component */
+@keyframes ping-slow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+}
+
+@keyframes ping-medium {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0.75);
+    opacity: 0.3;
+  }
+}
+
+@keyframes ping-fast {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(0.7);
+    opacity: 0.3;
+  }
+}
+@keyframes fade {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 8s ease-in-out infinite;
+}
+
+.animate-ping-medium {
+  animation: ping-medium 8s ease-in-out infinite;
+}
+
+.animate-ping-fast {
+  animation: ping-fast 8s ease-in-out infinite;
+}
+.animate-fade {
+  animation: fade 4s ease-in-out infinite;
+}
+
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -28,11 +98,16 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentColor);
   }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {
   html {
-    @apply size-full;
+    @apply size-full scroll-smooth;
   }
 
   body {
@@ -145,24 +220,6 @@
 
   .dropdown:hover .dropdown-menu {
     display: block;
-  }
-
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.4);
   }
 
   /* for gmaps search dropdown */
@@ -278,6 +335,31 @@
   input[type="search"]::-webkit-search-results-button,
   input[type="search"]::-webkit-search-results-decoration {
     display: none;
+  }
+
+  /* Style for required form labels */
+  [data-slot="form-label"][for][aria-required="true"]::after {
+    @apply -ml-1 text-red-500 content-['*'];
+  }
+
+  /* Style for tabs */
+  [data-slot="tabs-trigger"] {
+    @apply not-data-[state=active]:text-gray-500;
+  }
+
+  /* Styling for input otp */
+  [data-slot="input-otp-slot"] {
+    @apply data-[active=true]:ring-primary-500 data-[active=true]:border-primary-500 data-[active=true]:ring-1 not-first:data-[active=true]:border-x;
+  }
+
+  /* Styling for radio group */
+  button[role="radio"] {
+    @apply data-[state=checked]:border-primary-500 data-[state=checked]:text-primary-500 border-gray-300 shadow-sm;
+  }
+
+  /* Styling fix for Select for backwards compatibility */
+  button[role="combobox"] {
+    @apply w-full;
   }
 }
 

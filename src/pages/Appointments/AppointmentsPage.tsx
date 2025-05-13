@@ -11,7 +11,7 @@ import {
   isYesterday,
   subDays,
 } from "date-fns";
-import { t } from "i18next";
+import dayjs from "dayjs";
 import { Edit3Icon } from "lucide-react";
 import { Link, navigate } from "raviger";
 import { useEffect } from "react";
@@ -24,6 +24,7 @@ import CareIcon from "@/CAREUI/icons/CareIcon";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CombinedDatePicker } from "@/components/ui/combined-date-picker";
 import {
   Command,
   CommandEmpty,
@@ -33,7 +34,6 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -49,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -99,6 +100,7 @@ interface DateRangeDisplayProps {
 }
 
 function AppointmentsEmptyState() {
+  const { t } = useTranslation();
   return (
     <Card className="flex flex-col items-center justify-center p-8 text-center border-dashed">
       <div className="rounded-full bg-primary/10 p-3 mb-4">
@@ -266,6 +268,7 @@ export default function AppointmentsPage({
   });
 
   const [activeTab, setActiveTab] = useView("appointments", "board");
+  const { open: isSidebarOpen } = useSidebar();
 
   const { hasPermission } = usePermissions();
   const { goBack } = useAppHistory();
@@ -382,11 +385,11 @@ export default function AppointmentsPage({
         >
           <TabsList>
             <TabsTrigger value="board">
-              <CareIcon icon="l-kanban" className="mr-2" />
+              <CareIcon icon="l-kanban" />
               <span>{t("board")}</span>
             </TabsTrigger>
             <TabsTrigger value="list">
-              <CareIcon icon="l-list-ul" className="mr-2" />
+              <CareIcon icon="l-list-ul" />
               <span>{t("list")}</span>
             </TabsTrigger>
           </TabsList>
@@ -394,8 +397,8 @@ export default function AppointmentsPage({
       }
     >
       <div className="mt-4 py-4 flex flex-col lg:flex-row gap-4 justify-between border-t border-gray-200">
-        <div className="flex flex-col xl:flex-row gap-4 items-start md:items-start">
-          <div className="mt-1">
+        <div className="flex flex-col xl:flex-row gap-4 items-start md:items-start md:w-xs">
+          <div className="mt-1 w-full">
             <Label className="mb-2 text-black">
               {t("select_practitioner")}
             </Label>
@@ -505,25 +508,63 @@ export default function AppointmentsPage({
                       </Button>
                     </div>
 
-                    <DateRangePicker
-                      date={{
-                        from: qParams.date_from
-                          ? new Date(qParams.date_from)
-                          : undefined,
-                        to: qParams.date_to
-                          ? new Date(qParams.date_to)
-                          : undefined,
-                      }}
-                      onChange={(date) =>
-                        updateQuery({
-                          date_from: date?.from
-                            ? dateQueryString(date.from)
-                            : null,
-                          date_to: date?.to ? dateQueryString(date?.to) : null,
-                          slot: null,
-                        })
-                      }
-                    />
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-sm font-medium">
+                        {t("start_date")}
+                      </Label>
+                      <CombinedDatePicker
+                        value={
+                          qParams.date_from
+                            ? new Date(qParams.date_from)
+                            : undefined
+                        }
+                        onChange={(date) => {
+                          if (qParams.date_to && date) {
+                            if (
+                              dayjs(date).isAfter(dayjs(qParams.date_to), "day")
+                            ) {
+                              updateQuery({
+                                date_from: date ? dateQueryString(date) : null,
+                                date_to: null,
+                                slot: null,
+                              });
+                              return;
+                            }
+                          }
+                          updateQuery({
+                            date_from: date ? dateQueryString(date) : null,
+                            slot: null,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-sm font-medium">
+                        {t("end_date")}
+                      </Label>
+                      <CombinedDatePicker
+                        value={
+                          qParams.date_to
+                            ? new Date(qParams.date_to)
+                            : undefined
+                        }
+                        onChange={(date) => {
+                          updateQuery({
+                            date_to: date ? dateQueryString(date) : null,
+                            slot: null,
+                          });
+                        }}
+                        blockDate={(date) =>
+                          qParams.date_from
+                            ? dayjs(date).isBefore(
+                                dayjs(qParams.date_from),
+                                "day",
+                              )
+                            : false
+                        }
+                      />
+                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -547,7 +588,7 @@ export default function AppointmentsPage({
 
         <div className="flex gap-4 items-center">
           <Input
-            className="w-[300px]"
+            className="md:w-xs w-full"
             placeholder={t("search")}
             value={qParams.search ?? ""}
             onChange={(e) => updateQuery({ search: e.target.value })}
@@ -556,7 +597,14 @@ export default function AppointmentsPage({
       </div>
 
       {activeTab === "board" ? (
-        <ScrollArea>
+        <ScrollArea
+          className={cn(
+            "transition-all duration-200",
+            isSidebarOpen
+              ? "ease-out md:w-[calc(100vw-21.5rem)]"
+              : "ease-in md:w-[calc(100vw-8rem)]",
+          )}
+        >
           <div className="flex w-max space-x-4">
             {(
               [
@@ -745,7 +793,7 @@ function AppointmentRow(props: {
   }: {
     totalCount: number;
     noMargin?: boolean;
-  }) => JSX.Element;
+  }) => React.ReactNode;
   updateQuery: (filter: FilterState) => void;
   resultsPerPage: number;
   slot: string | null;
@@ -817,7 +865,7 @@ function AppointmentRow(props: {
             value={props.status || "booked"}
             onValueChange={(value) => props.updateQuery({ status: value })}
           >
-            <SelectTrigger className="h-8 w-[160px]">
+            <SelectTrigger className="h-8 w-40">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>

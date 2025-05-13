@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { t } from "i18next";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Command,
@@ -41,6 +41,8 @@ export function LocationSearch({
   disabled,
   value,
 }: LocationSearchProps) {
+  const { t } = useTranslation();
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -48,7 +50,7 @@ export function LocationSearch({
     queryKey: ["locations", facilityId, mode, search],
     queryFn: query.debounced(locationApi.list, {
       pathParams: { facility_id: facilityId },
-      queryParams: { mode, name: search, form, available: "true" },
+      queryParams: { mode, name: search, form },
     }),
     enabled: facilityId !== "preview",
   });

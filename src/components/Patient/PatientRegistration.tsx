@@ -1,3 +1,4 @@
+import careConfig from "@careConfig";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { InfoIcon } from "lucide-react";
@@ -74,6 +75,7 @@ export default function PatientRegistration(
   const { patientId, facilityId } = props;
   const { t } = useTranslation();
   const { goBack } = useAppHistory();
+  const defaultCountry = careConfig.defaultCountry.name;
 
   const [suppressDuplicateWarning, setSuppressDuplicateWarning] =
     useState(!!patientId);
@@ -137,7 +139,9 @@ export default function PatientRegistration(
         })
         .refine(
           (data) =>
-            data.nationality === "India" ? !!data.geo_organization : true,
+            data.nationality === defaultCountry
+              ? !!data.geo_organization
+              : true,
           {
             message: t("geo_organization_required"),
             path: ["geo_organization"],
@@ -169,16 +173,17 @@ export default function PatientRegistration(
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nationality: "India",
+      nationality: defaultCountry,
       phone_number: phone_number || "",
       emergency_phone_number: "",
       age_or_dob: "dob",
       same_phone_number: false,
       same_address: true,
     },
+    mode: "onChange",
   });
 
   const { mutate: createPatient, isPending: isCreatingPatient } = useMutation({
@@ -225,6 +230,12 @@ export default function PatientRegistration(
         age: values.age_or_dob === "age" ? values.age : undefined,
         date_of_birth:
           values.age_or_dob === "dob" ? values.date_of_birth : undefined,
+        emergency_phone_number: values.same_phone_number
+          ? values.phone_number
+          : values.emergency_phone_number,
+        permanent_address: values.same_address
+          ? values.address
+          : values.permanent_address,
       });
       return;
     }
@@ -314,7 +325,7 @@ export default function PatientRegistration(
         address: patientQuery.data.address || "",
         permanent_address: patientQuery.data.permanent_address || "",
         pincode: patientQuery.data.pincode || undefined,
-        nationality: patientQuery.data.nationality || "India",
+        nationality: patientQuery.data.nationality || defaultCountry,
         geo_organization: (
           patientQuery.data.geo_organization as unknown as Organization
         )?.id,
@@ -357,6 +368,7 @@ export default function PatientRegistration(
             <PLUGIN_Component
               __name="PatientRegistrationForm"
               form={form}
+              facilityId={facilityId}
               patientId={patientId}
             />
 
@@ -373,7 +385,7 @@ export default function PatientRegistration(
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t("name")}</FormLabel>
+                    <FormLabel aria-required>{t("name")}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={t("type_patient_name")}
@@ -391,14 +403,18 @@ export default function PatientRegistration(
                 name="phone_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t("phone_number")}</FormLabel>
+                    <FormLabel aria-required>{t("phone_number")}</FormLabel>
                     <FormControl>
                       <PhoneInput
                         {...field}
                         onChange={(value) => {
-                          form.setValue("phone_number", value);
+                          field.onChange(value);
                           if (form.getValues("same_phone_number")) {
-                            form.setValue("emergency_phone_number", value);
+                            form.setValue(
+                              "emergency_phone_number",
+                              value || "",
+                              { shouldDirty: true },
+                            );
                           }
                         }}
                         data-cy="patient-phone-input"
@@ -419,6 +435,13 @@ export default function PatientRegistration(
                                     form.setValue(
                                       "emergency_phone_number",
                                       form.watch("phone_number"),
+                                      { shouldValidate: true },
+                                    );
+                                  } else {
+                                    form.setValue(
+                                      "emergency_phone_number",
+                                      "",
+                                      { shouldValidate: true },
                                     );
                                   }
                                 }}
@@ -444,7 +467,7 @@ export default function PatientRegistration(
                 disabled={form.watch("same_phone_number")}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>
+                    <FormLabel aria-required>
                       {t("emergency_phone_number")}
                     </FormLabel>
                     <FormControl>
@@ -463,7 +486,7 @@ export default function PatientRegistration(
                 name="gender"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel required>{t("sex")}</FormLabel>
+                    <FormLabel aria-required>{t("sex")}</FormLabel>
                     <FormControl>
                       <RadioGroup
                         {...field}
@@ -472,10 +495,7 @@ export default function PatientRegistration(
                         className="flex gap-5 flex-wrap"
                       >
                         {GENDER_TYPES.map((g) => (
-                          <FormItem
-                            key={g.id}
-                            className="flex items-center space-x-2 space-y-0"
-                          >
+                          <FormItem key={g.id} className="flex">
                             <FormControl>
                               <RadioGroupItem
                                 value={g.id}
@@ -499,7 +519,7 @@ export default function PatientRegistration(
                 name="blood_group"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t("blood_group")}</FormLabel>
+                    <FormLabel aria-required>{t("blood_group")}</FormLabel>
                     <Select
                       {...field}
                       onValueChange={field.onChange}
@@ -578,7 +598,7 @@ export default function PatientRegistration(
                     name="age"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel required>{t("age")}</FormLabel>
+                        <FormLabel aria-required>{t("age")}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -592,6 +612,7 @@ export default function PatientRegistration(
                                 e.target.value
                                   ? Number(e.target.value)
                                   : (null as unknown as number),
+                                { shouldDirty: true },
                               )
                             }
                             data-cy="age-input"
@@ -698,14 +719,17 @@ export default function PatientRegistration(
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t("current_address")}</FormLabel>
+                    <FormLabel aria-required>{t("current_address")}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         onChange={(e) => {
-                          form.setValue("address", e.target.value);
+                          field.onChange(e);
                           if (form.getValues("same_address")) {
-                            form.setValue("permanent_address", e.target.value);
+                            form.setValue("permanent_address", e.target.value, {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            });
                           }
                         }}
                         data-cy="current-address-input"
@@ -726,6 +750,7 @@ export default function PatientRegistration(
                                     form.setValue(
                                       "permanent_address",
                                       form.getValues("address"),
+                                      { shouldValidate: true },
                                     );
                                   }
                                 }}
@@ -750,7 +775,9 @@ export default function PatientRegistration(
                 disabled={form.watch("same_address")}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t("permanent_address")}</FormLabel>
+                    <FormLabel aria-required>
+                      {t("permanent_address")}
+                    </FormLabel>
                     <FormControl>
                       <Textarea {...field} data-cy="permanent-address-input" />
                     </FormControl>
@@ -764,19 +791,17 @@ export default function PatientRegistration(
                 name="pincode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t("pincode")}</FormLabel>
+                    <FormLabel aria-required>{t("pincode")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) =>
-                          form.setValue(
-                            "pincode",
-                            e.target.value
-                              ? Number(e.target.value)
-                              : (undefined as unknown as number), // intentionally setting to undefined, when the value is empty to avoid 0 in the input field
-                          )
-                        }
+                        onChange={(e) => {
+                          const value = e.target.value
+                            ? Number(e.target.value)
+                            : undefined;
+                          field.onChange(value);
+                        }}
                         data-cy="pincode-input"
                       />
                     </FormControl>
@@ -791,7 +816,7 @@ export default function PatientRegistration(
                   name="nationality"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel required>{t("nationality")}</FormLabel>
+                      <FormLabel aria-required>{t("nationality")}</FormLabel>
                       <FormControl>
                         <Autocomplete
                           options={countryList.map((c) => ({
@@ -800,7 +825,9 @@ export default function PatientRegistration(
                           }))}
                           {...field}
                           onChange={(value) =>
-                            form.setValue("nationality", value)
+                            form.setValue("nationality", value, {
+                              shouldDirty: true,
+                            })
                           }
                           data-cy="nationality-input"
                         />
@@ -812,7 +839,7 @@ export default function PatientRegistration(
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {form.watch("nationality") === "India" && (
+                {form.watch("nationality") === defaultCountry && (
                   <FormField
                     control={form.control}
                     name="geo_organization"
@@ -825,7 +852,10 @@ export default function PatientRegistration(
                             selected={selectedLevels}
                             value={form.watch("geo_organization")}
                             onChange={(value) =>
-                              form.setValue("geo_organization", value)
+                              form.setValue("geo_organization", value, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              })
                             }
                           />
                         </FormControl>
